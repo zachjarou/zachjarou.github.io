@@ -2,11 +2,11 @@
   "articles": [
     {
       "path": "about.html",
-      "title": "About this blog",
-      "description": "Some additional details about the blog",
+      "title": "About Zach Jarou, MD, MBA",
+      "description": "Emergency Physician - Data Scientist - Interested in Healthcare Operations, Quality, Informatics, and Policy",
       "author": [],
-      "contents": "\n\n\n\n",
-      "last_modified": "2020-12-12T09:56:28-05:00"
+      "contents": "\nZach Jarou, MD is an emergency physician and data scientist in Southeast Michigan. He attended medical school at Michigan State University, completed specialty training at the Denver Health Residency in Emergency Medicine, and obtained his MBA from the University of Chicago Booth School of Business while serving as an Administrative Fellow at the University of Chicago Medical Center and completing a Fellowship in Administration, Quality, Informatics, and Policy with the American College of Emergency Physicians. Dr. Jarou is Past President of the Emergency Medicine Residents’ Association, a membership organization of more than 18,000 medical students, residents, fellows, and alumni. His interests include EHR optimization, health information exchange and interoperability, value-based healthcare, operations management, data science, machine learning, and decision modeling.\n\n\n\n",
+      "last_modified": "2021-11-04T23:14:41-04:00"
     },
     {
       "path": "index.html",
