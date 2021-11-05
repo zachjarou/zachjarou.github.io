@@ -1,0 +1,282 @@
+---
+title: "NHAMCS (2011-2017)"
+description: |
+  The National Hospital Ambulatory Medical Care Survey (NHAMCS) is generated annually by the Center for Disease Control's National Center of Health Statistics. The survey has been performed each year since 1992, however the data elements collected have varied from year to year. This post will walk you through how to create a single dataframe that combinines multiple years of NHAMCS data.
+author:
+  - name: Zach Jarou, MD, MBA
+    # url: https://example.com/norajones
+date: 12-08-2020
+categories:
+  - NHAMCS
+  - Data Set
+  - Emergency Med
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(haven)
+select <- dplyr::select
+```
+
+# Introduction to the Dataset
+
+The National Hospital Ambulatory Medical Care Survey (NHAMCS) is generated annually by the Center for Disease Control's National Center of Health Statistics. The survey has been performed each year since 1992, however the data elements collected have varied from year to year. 
+
+The survey attempts to provide a national summary of ED visits using a three-stage probability sample based upon geographical units, emergency departments, and emergency services areas. Data is manually abstracted for a random sample of patients.^[https://www.cdc.gov/nchs/ahcd/about_ahcd.htm]
+
+This post will walk you through how to create a single R dataframe that combinines multiple years of NHAMCS data.
+
+<!-- # Download Multiple Years of NHAMCS Data -->
+## Download Individual Years
+
+Each individual year of NHAMCS data is available in SAS, SPSS, and Stata file formats.^[https://www.cdc.gov/nchs/ahcd/datasets_documentation_related.htm] 
+
+We will be using the R package `haven`^[https://cran.r-project.org/web/packages/haven/] to import the STATA files for the years 2011-2017. 
+Running the following code in R will download the STATA files in ZIP format for 2011-2017, unzip them, and create an R dataframe for each individual year.
+
+```{r eval=F, echo=TRUE}
+library(tidyverse)
+library(haven)
+years <- seq(2011,2017,1)
+url_stem <-
+  "ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/dataset_documentation/nhamcs/stata/"
+
+for (i in years){
+  url_end <- paste0("ed",i,"-stata.zip")
+  url_full <- paste0(url_stem,url_end)
+  download.file(url_full, destfile = url_end)
+  unzip(url_end)
+}
+nhamcs2011 <- read_dta("ed2011-stata.dta") %>% as.data.frame() 
+nhamcs2012 <- read_dta("ed2012-stata.dta") %>% as.data.frame() 
+nhamcs2013 <- read_dta("ED2013-stata.dta") %>% as.data.frame() 
+nhamcs2014 <- read_dta("ed2014-stata.dta")  %>% as.data.frame() 
+nhamcs2015 <- read_dta("ED2015-stata.dta")  %>% as.data.frame() 
+nhamcs2016 <- read_dta("ED2016-stata.dta")  %>% as.data.frame() 
+nhamcs2017 <- read_dta("ed2017-stata.dta")  %>% as.data.frame()
+```
+
+You can save an `RData` file to easily load all of these individual data frames in a single step rather than having to re-download them by running the following code.
+
+
+```{r message=F, echo=T, eval=F}
+save(nhamcs2011,nhamcs2012,nhamcs2013,
+     nhamcs2014,nhamcs2015,nhamcs2016,nhamcs2017, 
+     file="nhamcs_raw.RData")
+load("nhamcs_raw.RData")
+```
+
+```{r message=F, echo=F}
+#save(nhamcs2011,nhamcs2012,nhamcs2013,nhamcs2014,nhamcs2015,nhamcs2016,nhamcs2017, file="nhamcs_raw.RData")
+load("nhamcs_raw.RData")
+```
+
+
+## Compare Dimensions of Each Year
+
+Running the following code will create a new dataframe called `year_compare` that counts the number of rows and the number of columns in each year of NHAMCS data.
+
+```{r echo=T}
+year_compare <- data.frame(year=rep(0,7),rows=rep(0,7),cols=rep(0,7))
+
+for (i in 1:7) {
+  year_compare[i, "year"] = paste0(201,i)
+  year_compare[i, "rows"] = nrow(get(paste0("nhamcs201", i)))
+  year_compare[i, "cols"] = ncol(get(paste0("nhamcs201", i)))}
+```
+
+Each year of NHAMCS data contains 16-31k rows and the number of columns ranges from the 400s-1000s. 
+
+```{r echo=T}
+year_compare %>% 
+  select(NHAMCS_Year=year, Number_of_Rows=rows, Number_of_Columns=cols) %>%
+  rmarkdown::paged_table(.)
+```
+
+```{r eval=F, include=F}
+#%>% 
+#    kable(., format = "latex", 
+#          caption="Variation in NHAMCS Dataframe Dimensions Across Years",
+#          booktabs = TRUE,
+#          linesep = "") %>% 
+# kable_styling(latex_options = "HOLD_position")
+
+
+#### TOTAL ROWS
+#nrow(nhamcs2011)+nrow(nhamcs2012)+nrow(nhamcs2013)+
+#  nrow(nhamcs2014)+nrow(nhamcs2015)+nrow(nhamcs2016)+nrow(nhamcs2017)
+```
+
+## Count Column Appearances by Year
+
+Running the following R code will create individual dataframes with the names of the coloumns contained within each year of NHAMCS data.
+
+```{r message=F}
+names2011 <- names(nhamcs2011) %>% as.data.frame() %>% 
+  select(VarName=1) %>% mutate(Year = 2011)
+names2012 <- names(nhamcs2012) %>% as.data.frame() %>% 
+  select(VarName=1) %>% mutate(Year = 2012)
+names2013 <- names(nhamcs2013) %>% as.data.frame() %>% 
+  select(VarName=1) %>% mutate(Year = 2013)
+names2014 <- names(nhamcs2014) %>% as.data.frame() %>% 
+  select(VarName=1) %>% mutate(Year = 2014)
+names2015 <- names(nhamcs2015) %>% as.data.frame() %>% 
+  select(VarName=1) %>% mutate(Year = 2015)
+names2016 <- names(nhamcs2016) %>% as.data.frame() %>% 
+  select(VarName=1) %>% mutate(Year = 2016)
+names2017 <- names(nhamcs2017) %>% as.data.frame() %>% 
+  select(VarName=1) %>% mutate(Year = 2017)
+```
+
+Each `names` dataframe will have a row for each column name and a column that contains the name of the year.
+
+```{r message=F}
+rmarkdown::paged_table(names2011)
+```
+
+Running this R code will stack the rows of each indivdual `names` dataframe, create a new column called `Included`, pivot the data so that there is a column for each year, and sum the total number of times each column appears. 
+
+```{r message=F}
+VarCount <- rbind(names2011,names2012,names2013,
+                  names2014,names2015,names2016,names2017) %>%
+  mutate(Included = 1) %>% 
+  spread(Year,Included) %>% 
+  group_by(VarName) %>%
+  mutate_all(~replace(., is.na(.), 0)) %>% 
+  mutate(Total=sum(`2011`+`2012`+`2013`+`2014`+`2015`+`2016`+`2017`)) %>% 
+  arrange(desc(Total))
+VarCount %>% rmarkdown::paged_table(.)
+```
+
+By examining the distribution of column counts, we see that if we want to evaluate the variables contained in all 7 years of data, we would have 341 columns, but if we were willing to sacrifice one year's worth of data, we could add an additional 137 columns that were only present in 6 years' worth of data. If we were willing to further sacrifice rows and use only 4 years of data, we could add an additional 503 columns (465+38).
+
+```{r message=F}
+VarCount %>% ggplot(aes(x=Total)) + 
+  geom_histogram(binwidth = 1, col="black", fill="white")+
+  stat_bin(binwidth= 1, geom="text", aes(label=..count..), vjust = -0.25) + 
+  labs(x="Total Years Variable Included", y="Number of Variables")
+```
+
+## Grouping Variables/Columns by Type
+
+Before making decisions about the trade-off between the numbers of rows and columns that your combined dataframe will have, it may be helpful to consider the types of variables that would be gained or lost.
+
+Using Section II-A (the "codebook") of the 2017 NHAMCS micro-data file,^[ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Dataset_Documentation/NHAMCS/doc17_ed-508.pdf] each variable/column can be matched to the section it is located within in the year 2017.
+
+```{r message=F, warning=F}
+VarsCommonNum <- names2017 %>%
+  # ELIMINATE VARIABLES NOT INCLUDED IN 2017
+  filter(VarName != "RFV13D" & VarName != "RFV23D" & VarName != "RFV33D" &
+           VarName != "RFV43D" & VarName != "RFV53D") %>%   
+  rownames_to_column() %>% select(VarNum2017=rowname,VarName) %>% 
+  mutate(VarNum2017 = as.integer(VarNum2017)) %>% 
+  mutate(VarCat = case_when(VarNum2017 >= 0 & VarNum2017 <=27 ~ "DATE OF VISIT",
+            VarNum2017 >= 28 & VarNum2017 <=36 ~ "INITIAL VITAL SIGNS",
+            VarNum2017 >= 37 & VarNum2017  <=42 ~ "PATIENT'S REASON(S) FOR VISIT",
+            VarNum2017 >= 43 & VarNum2017  <=47 ~ "INJURY VARIABLES",
+            VarNum2017 >= 48 & VarNum2017  <=50 ~ "CAUSE",
+            VarNum2017 >= 51 & VarNum2017  <=55 ~ "PROVIDER'S DIAGNOSIS",
+            VarNum2017 >= 56 & VarNum2017  <=60 ~ "PROBABLE, QUESTIONABLE, RULE OUT DX",
+            VarNum2017 >= 61 & VarNum2017  <=85 ~ "DOES PATIENT HAVE:",
+            VarNum2017 >= 86 & VarNum2017  <=126 ~ "DIAGNOSTIC SERVICES",
+            VarNum2017 >= 127 & VarNum2017  <=143 ~ "PROCEDURES",
+            VarNum2017 >= 144 & VarNum2017  <=207 ~ "MEDICATIONS & IMMUNIZATIONS",
+            VarNum2017 >= 208 & VarNum2017  <=213 ~ "VITALS TAKEN AFTER TRIAGE",  
+            VarNum2017 >= 214 & VarNum2017  <=223 ~ "PROVIDERS SEEN",
+            VarNum2017 >= 224 & VarNum2017  <=251 ~ "VISIT DISPOSITION", 
+            VarNum2017 >= 252 & VarNum2017  <=338 ~ "HOSPITAL DEMOGRAPHICS", 
+            VarNum2017 >= 339 & VarNum2017  <=938 ~ "DRUG-RELATED INFO FOR MEDICATION",
+            VarNum2017 >= 939 & VarNum2017  <=944 ~ "NHAMCS DESIGN VARIABLES"))
+VarsNumCat <- VarsCommonNum %>% left_join(VarCount,by="VarName") 
+
+```
+
+By visualizing the variable types by count, we see that most of the variables that would be gained by limiting our final dataframe to only 4 years of data are DRUG-RELATED INFO FOR MEDICATION.  
+
+```{r layout="l-body-outset", fig.height=5, echo=T, message=F, warning=F, preview=T}
+library(viridis)
+VarsNumCat %>% #filter(Total >= 6) %>% 
+  group_by(VarCat, Total) %>% summarise(Count = n()) %>% 
+  ggplot(aes(x=as.factor(Total), y=Count, fill=VarCat)) + geom_col() +
+  labs(x="Total Years Variable Included", y="Number of Variables", fill="Variable Cateogry")+
+  scale_color_viridis(discrete = TRUE, option = "D")+
+  scale_fill_viridis(discrete = TRUE)
+
+```
+
+## Exporting Final Data Frame
+
+### Export 7 Years (2011-2017)
+
+By keeping the maximum number of rows (166k), you will have a dataframe that contains 338 variables.
+
+```{r eval=F, message=F, warning=F}
+VarList <- VarsNumCat %>% filter(Total >= 7) %>%
+  select(VarName) %>% filter(VarName != "MSA") %>% dplyr::pull(., 1)
+
+nhamcs2011 <- nhamcs2011 %>% select(VarList)
+nhamcs2012 <- nhamcs2012 %>% select(VarList)
+nhamcs2013 <- nhamcs2013 %>% select(VarList)
+nhamcs2014 <- nhamcs2014 %>% select(VarList)
+nhamcs2015 <- nhamcs2015 %>% select(VarList)
+nhamcs2016 <- nhamcs2016 %>% select(VarList)
+nhamcs2017 <- nhamcs2017 %>% select(VarList)
+
+nhamcs_2011_2017 <- rbind(nhamcs2011,nhamcs2012,nhamcs2013,
+                     nhamcs2014,nhamcs2015,nhamcs2016,nhamcs2017)
+
+save(nhamcs_2011_2017, file="nhamcs_2011_2017.RData")
+```
+
+### Variables Gained Using 6 Years
+
+The names and categories of variables that could be gained by sacrificing one year's worth of data are shown below.
+
+```{r echo=T}
+VarsNumCat %>% 
+  filter(Total == 6) %>% 
+  select(VarNum2017, VarName, VarCat) %>% rmarkdown::paged_table(.) 
+```
+
+### Export 6 Years (2012-2017)
+
+A dataframe containing 135k rows with 471 columns can be created by running the following R code.
+
+```{r eval=F, message=F, warning=F}
+load("nhamcs_raw.RData")
+VarList <- VarsCommonReduced %>% filter(Total >= 6) %>%
+  select(VarName) %>% filter(VarName != "MSA") %>% dplyr::pull(., 1)
+
+nhamcs2012 <- nhamcs2012 %>% select(VarList)
+nhamcs2013 <- nhamcs2013 %>% select(VarList)
+nhamcs2014 <- nhamcs2014 %>% select(VarList)
+nhamcs2015 <- nhamcs2015 %>% select(VarList)
+nhamcs2016 <- nhamcs2016 %>% select(VarList)
+nhamcs2017 <- nhamcs2017 %>% select(VarList)
+
+nhamcs_2012_2017 <- rbind(nhamcs2012,nhamcs2013,
+                     nhamcs2014,nhamcs2015,nhamcs2016,nhamcs2017)
+
+save(nhamcs_2012_2017, file="nhamcs_2012_2017.RData")
+```
+
+
+```{r include=F}
+#dim(nhamcs_comb)
+
+# rm(nhamcs2011,nhamcs2012,nhamcs2013,nhamcs2014,nhamcs2015,nhamcs2016,nhamcs2017)
+# rm(names2011,names2012,names2013,names2014,names2015,names2016,names2017)
+# rm(VarCount,VarsCommonNum)
+# rm(VarList)
+# rm(i, url_end, url_full, url_stem, years)
+
+#load("single_DF.RData")   #374MB
+#VarsCommonReduced <- VarsCommonReduced %>% filter(Total >= 6)
+
+
+```

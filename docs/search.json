@@ -1,0 +1,20 @@
+{
+  "articles": [
+    {
+      "path": "about.html",
+      "title": "About this blog",
+      "description": "Some additional details about the blog",
+      "author": [],
+      "contents": "\n\n\n\n",
+      "last_modified": "2020-12-12T09:56:28-05:00"
+    },
+    {
+      "path": "index.html",
+      "title": "MachiEM Learning",
+      "author": [],
+      "contents": "\n\n\n\n",
+      "last_modified": "2021-11-04T23:03:21-04:00"
+    }
+  ],
+  "collections": ["posts/posts.json"]
+}
